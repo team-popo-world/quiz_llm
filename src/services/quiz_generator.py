@@ -12,13 +12,15 @@ from src.models import (
 )
 import json
 import logging
+import asyncio
 from typing import Optional, Union
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
 
 class QuizGeneratorService:
-    """LLM을 사용한 퀴즈 생성 서비스"""
+    """LLM을 사용한 퀴즈 생성 서비스 (비동기 처리)"""
     
     def __init__(self):
         """서비스 초기화"""
@@ -28,6 +30,9 @@ class QuizGeneratorService:
             temperature=settings.temperature,
             max_tokens=settings.max_tokens
         )
+        
+        # 동시성 제한을 위한 세마포어 (설정에서 가져옴)
+        self._semaphore = asyncio.Semaphore(settings.max_concurrent_requests)
         
         # 난이도별 설명
         self.difficulty_descriptions = {
@@ -180,8 +185,33 @@ class QuizGeneratorService:
 """
         return prompt
     
-    async def generate_quiz(self, request: QuizRequest) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
-        """퀴즈 생성"""
+    async def generate_quiz(
+        self, 
+        request: QuizRequest, 
+        timeout: Optional[float] = None
+    ) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
+        """비동기 퀴즈 생성 (타임아웃 및 동시성 제한 포함)"""
+        if timeout is None:
+            timeout = settings.default_timeout
+            
+        async with self._semaphore:  # 동시성 제한
+            try:
+                return await asyncio.wait_for(
+                    self._generate_quiz_internal(request),
+                    timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"퀴즈 생성 타임아웃: {timeout}초 초과")
+                raise ValueError(f"퀴즈 생성에 너무 많은 시간이 걸렸습니다 ({timeout}초 초과)")
+            except Exception as e:
+                logger.error(f"퀴즈 생성 실패: {str(e)}")
+                raise
+    
+    async def _generate_quiz_internal(
+        self, 
+        request: QuizRequest
+    ) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
+        """내부 퀴즈 생성 로직"""
         try:
             # 난이도별 프롬프트 선택
             if request.difficulty == DifficultyLevel.EASY:
@@ -193,93 +223,50 @@ class QuizGeneratorService:
             else:
                 raise ValueError(f"지원하지 않는 난이도입니다: {request.difficulty}")
             
-            # LLM 호출
+            # LLM 비동기 호출
             messages = [HumanMessage(content=prompt)]
             response = await self.llm.ainvoke(messages)
             
-            # 응답 텍스트 정리
-            response_text = response.content.strip()
-            
-            # JSON 블록이 있다면 추출
-            if "```json" in response_text:
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                response_text = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                response_text = response_text[start:end].strip()
-            
-            # JSON 파싱
-            try:
-                quiz_data = json.loads(response_text)
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON 파싱 실패: {e}, 응답: {response_text}")
-                raise ValueError("LLM 응답을 JSON으로 파싱할 수 없습니다.")
-            
-            # 난이도별 응답 모델로 변환
-            if request.difficulty == DifficultyLevel.EASY:
-                quiz_response = EasyQuizResponse(**quiz_data)
-            elif request.difficulty == DifficultyLevel.MEDIUM:
-                quiz_response = MediumQuizResponse(**quiz_data)
-            else:  # HARD
-                quiz_response = HardQuizResponse(**quiz_data)
-            
-            logger.info(f"퀴즈 생성 성공 - 난이도: {request.difficulty}")
-            return quiz_response
+            # 응답 처리
+            return self._parse_response(response, request.difficulty)
             
         except Exception as e:
             logger.error(f"퀴즈 생성 실패: {str(e)}")
             raise
     
-    def generate_quiz_sync(self, request: QuizRequest) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
-        """동기 방식 퀴즈 생성"""
+    def _parse_response(
+        self, 
+        response, 
+        difficulty: DifficultyLevel
+    ) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
+        """LLM 응답 파싱"""
+        # 응답 텍스트 정리
+        response_text = response.content.strip()
+        
+        # JSON 블록이 있다면 추출
+        if "```json" in response_text:
+            start = response_text.find("```json") + 7
+            end = response_text.find("```", start)
+            response_text = response_text[start:end].strip()
+        elif "```" in response_text:
+            start = response_text.find("```") + 3
+            end = response_text.find("```", start)
+            response_text = response_text[start:end].strip()
+        
+        # JSON 파싱
         try:
-            # 난이도별 프롬프트 선택
-            if request.difficulty == DifficultyLevel.EASY:
-                prompt = self._create_easy_prompt(request)
-            elif request.difficulty == DifficultyLevel.MEDIUM:
-                prompt = self._create_medium_prompt(request)
-            elif request.difficulty == DifficultyLevel.HARD:
-                prompt = self._create_hard_prompt(request)
-            else:
-                raise ValueError(f"지원하지 않는 난이도입니다: {request.difficulty}")
-            
-            # LLM 호출 (동기)
-            messages = [HumanMessage(content=prompt)]
-            response = self.llm.invoke(messages)
-            
-            # 응답 텍스트 정리
-            response_text = response.content.strip()
-            
-            # JSON 블록이 있다면 추출
-            if "```json" in response_text:
-                start = response_text.find("```json") + 7
-                end = response_text.find("```", start)
-                response_text = response_text[start:end].strip()
-            elif "```" in response_text:
-                start = response_text.find("```") + 3
-                end = response_text.find("```", start)
-                response_text = response_text[start:end].strip()
-            
-            # JSON 파싱
-            try:
-                quiz_data = json.loads(response_text)
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON 파싱 실패: {e}, 응답: {response_text}")
-                raise ValueError("LLM 응답을 JSON으로 파싱할 수 없습니다.")
-            
-            # 난이도별 응답 모델로 변환
-            if request.difficulty == DifficultyLevel.EASY:
-                quiz_response = EasyQuizResponse(**quiz_data)
-            elif request.difficulty == DifficultyLevel.MEDIUM:
-                quiz_response = MediumQuizResponse(**quiz_data)
-            else:  # HARD
-                quiz_response = HardQuizResponse(**quiz_data)
-            
-            logger.info(f"퀴즈 생성 성공 - 난이도: {request.difficulty}")
-            return quiz_response
-            
-        except Exception as e:
-            logger.error(f"퀴즈 생성 실패: {str(e)}")
-            raise
+            quiz_data = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 파싱 실패: {e}, 응답: {response_text}")
+            raise ValueError("LLM 응답을 JSON으로 파싱할 수 없습니다.")
+        
+        # 난이도별 응답 모델로 변환
+        if difficulty == DifficultyLevel.EASY:
+            quiz_response = EasyQuizResponse(**quiz_data)
+        elif difficulty == DifficultyLevel.MEDIUM:
+            quiz_response = MediumQuizResponse(**quiz_data)
+        else:  # HARD
+            quiz_response = HardQuizResponse(**quiz_data)
+        
+        logger.info(f"퀴즈 생성 성공 - 난이도: {difficulty}")
+        return quiz_response
