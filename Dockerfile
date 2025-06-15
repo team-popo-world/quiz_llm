@@ -1,6 +1,6 @@
 # Quiz LLM API Dockerfile
 # Python 3.11 slim 이미지 사용 (더 가볍고 빠름)
-FROM python:3.11-slim
+FROM python:3.11-slim as builder
 
 # 메타데이터 설정
 LABEL maintainer="Quiz LLM API Team"
@@ -26,17 +26,25 @@ WORKDIR /app
 RUN pip install uv
 
 # 의존성 파일들 먼저 복사 (Docker 레이어 캐싱 최적화)
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml ./
 
-# 의존성 설치
-RUN uv sync --frozen
+# 락 파일이 있으면 복사, 없으면 무시
+COPY uv.lock* ./
+
+# 의존성 설치 - 락 파일이 있으면 frozen 모드, 없으면 일반 모드
+RUN uv venv && \
+    if [ -f "uv.lock" ]; then \
+        uv sync --frozen; \
+    else \
+        uv sync; \
+    fi
 
 # 애플리케이션 소스 코드 복사
 COPY . .
 
-# 비루트 사용자 생성 및 권한 설정 (보안)
-RUN groupadd -r appuser && useradd -r -g appuser -m appuser
-RUN chown -R appuser:appuser /app
+# 애플리케이션 사용자 생성 및 권한 설정 (보안)
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 # 포트 노출
@@ -44,7 +52,7 @@ EXPOSE 8001
 
 # 헬스체크 설정
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/docs || exit 1
+    CMD curl -f http://localhost:8001/ || exit 1
 
 # 애플리케이션 실행
-CMD ["uv", "run", "python", "main.py"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
