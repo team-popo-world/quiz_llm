@@ -31,7 +31,7 @@ GOOGLE_API_KEY=your_google_api_key_here
 
 # Server Configuration
 HOST=0.0.0.0
-PORT=8000
+PORT=8001
 
 # Quiz Configuration
 DEFAULT_DIFFICULTY=0
@@ -45,14 +45,14 @@ DEFAULT_QUIZ_COUNT=3
 uv run python main.py
 
 # 또는 직접 실행
-uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 ### 4. API 문서 확인
 
 서버 실행 후 브라우저에서 다음 URL을 방문하세요:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:8001/docs
+- ReDoc: http://localhost:8001/redoc
 
 ## API 사용법
 
@@ -60,7 +60,7 @@ uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 #### 쉬운 난이도 (5-7세) - OX 퀴즈
 ```bash
-curl -X POST "http://localhost:8000/quiz/easy" \
+curl -X POST "http://localhost:8001/quiz/easy" \
   -H "Content-Type: application/json" \
   -d '{"topic": "용돈"}'
 ```
@@ -80,7 +80,7 @@ curl -X POST "http://localhost:8000/quiz/easy" \
 
 #### 보통 난이도 (8-9세) - 3지선다
 ```bash
-curl -X POST "http://localhost:8000/quiz/medium" \
+curl -X POST "http://localhost:8001/quiz/medium" \
   -H "Content-Type: application/json" \
   -d '{"topic": "저축"}'
 ```
@@ -103,7 +103,7 @@ curl -X POST "http://localhost:8000/quiz/medium" \
 
 #### 어려운 난이도 (10세) - 4지선다
 ```bash
-curl -X POST "http://localhost:8000/quiz/hard" \
+curl -X POST "http://localhost:8001/quiz/hard" \
   -H "Content-Type: application/json" \
   -d '{"topic": "소비"}'
 ```
@@ -126,7 +126,7 @@ curl -X POST "http://localhost:8000/quiz/hard" \
 
 #### 주제 없이 생성
 ```bash
-curl -X POST "http://localhost:8000/quiz/easy" \
+curl -X POST "http://localhost:8001/quiz/easy" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
@@ -134,7 +134,7 @@ curl -X POST "http://localhost:8000/quiz/easy" \
 ### 2. 범용 퀴즈 생성
 
 ```bash
-curl -X POST "http://localhost:8000/quiz/generate" \
+curl -X POST "http://localhost:8001/quiz/generate" \
   -H "Content-Type: application/json" \
   -d '{
     "difficulty": 0,
@@ -159,13 +159,13 @@ curl -X POST "http://localhost:8000/quiz/generate" \
 ### 3. 지원하는 난이도 확인
 
 ```bash
-curl -X GET "http://localhost:8000/quiz/difficulty-levels"
+curl -X GET "http://localhost:8001/quiz/difficulty-levels"
 ```
 
 ### 4. 추천 주제 확인
 
 ```bash
-curl -X GET "http://localhost:8000/quiz/topics"
+curl -X GET "http://localhost:8001/quiz/topics"
 ```
 
 ## 엔드포인트 목록
