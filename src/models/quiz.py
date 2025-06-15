@@ -1,20 +1,20 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import Optional, Literal, Union
 from enum import IntEnum
 
 
 class DifficultyLevel(IntEnum):
     """퀴즈 난이도 레벨"""
-    EASY = 0    # 하
-    MEDIUM = 1  # 중
-    HARD = 2    # 상
+    EASY = 0    # 하 - OX 퀴즈
+    MEDIUM = 1  # 중 - 3지선다
+    HARD = 2    # 상 - 4지선다
 
 
 class QuizRequest(BaseModel):
     """퀴즈 생성 요청 모델"""
     difficulty: DifficultyLevel = Field(
         default=DifficultyLevel.EASY,
-        description="퀴즈 난이도 (0: 하, 1: 중, 2: 상)"
+        description="퀴즈 난이도 (0: 하-OX, 1: 중-3지선다, 2: 상-4지선다)"
     )
     quiz_count: int = Field(
         default=3,
@@ -28,8 +28,8 @@ class QuizRequest(BaseModel):
     )
 
 
-class QuizResponse(BaseModel):
-    """퀴즈 응답 모델"""
+class EasyQuizResponse(BaseModel):
+    """쉬운 난이도 퀴즈 응답 모델 (OX 퀴즈)"""
     difficulty: int = Field(description="퀴즈 난이도")
     Q1: str = Field(description="첫 번째 퀴즈 문제")
     A1: Literal["O", "X"] = Field(description="첫 번째 퀴즈 정답")
@@ -37,6 +37,38 @@ class QuizResponse(BaseModel):
     A2: Literal["O", "X"] = Field(description="두 번째 퀴즈 정답")
     Q3: str = Field(description="세 번째 퀴즈 문제")
     A3: Literal["O", "X"] = Field(description="세 번째 퀴즈 정답")
+
+
+class MediumQuizResponse(BaseModel):
+    """보통 난이도 퀴즈 응답 모델 (3지선다)"""
+    difficulty: int = Field(description="퀴즈 난이도")
+    Q1: str = Field(description="첫 번째 퀴즈 문제")
+    Q1_choices: list[str] = Field(description="첫 번째 퀴즈 선택지 (3개)")
+    A1: Literal[1, 2, 3] = Field(description="첫 번째 퀴즈 정답 (1, 2, 3)")
+    Q2: str = Field(description="두 번째 퀴즈 문제")
+    Q2_choices: list[str] = Field(description="두 번째 퀴즈 선택지 (3개)")
+    A2: Literal[1, 2, 3] = Field(description="두 번째 퀴즈 정답 (1, 2, 3)")
+    Q3: str = Field(description="세 번째 퀴즈 문제")
+    Q3_choices: list[str] = Field(description="세 번째 퀴즈 선택지 (3개)")
+    A3: Literal[1, 2, 3] = Field(description="세 번째 퀴즈 정답 (1, 2, 3)")
+
+
+class HardQuizResponse(BaseModel):
+    """어려운 난이도 퀴즈 응답 모델 (4지선다)"""
+    difficulty: int = Field(description="퀴즈 난이도")
+    Q1: str = Field(description="첫 번째 퀴즈 문제")
+    Q1_choices: list[str] = Field(description="첫 번째 퀴즈 선택지 (4개)")
+    A1: Literal[1, 2, 3, 4] = Field(description="첫 번째 퀴즈 정답 (1, 2, 3, 4)")
+    Q2: str = Field(description="두 번째 퀴즈 문제")
+    Q2_choices: list[str] = Field(description="두 번째 퀴즈 선택지 (4개)")
+    A2: Literal[1, 2, 3, 4] = Field(description="두 번째 퀴즈 정답 (1, 2, 3, 4)")
+    Q3: str = Field(description="세 번째 퀴즈 문제")
+    Q3_choices: list[str] = Field(description="세 번째 퀴즈 선택지 (4개)")
+    A3: Literal[1, 2, 3, 4] = Field(description="세 번째 퀴즈 정답 (1, 2, 3, 4)")
+
+
+# 이전 버전과의 호환성을 위한 별칭
+QuizResponse = Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]
 
 
 class ErrorResponse(BaseModel):
