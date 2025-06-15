@@ -1,8 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
-from src.models import QuizRequest, QuizResponse, ErrorResponse, DifficultyLevel
+from src.models import (
+    QuizRequest, 
+    EasyQuizResponse, 
+    MediumQuizResponse, 
+    HardQuizResponse,
+    QuizResponse,
+    ErrorResponse, 
+    DifficultyLevel
+)
 from src.services import QuizGeneratorService
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Union
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,18 +32,18 @@ class SimplifiedQuizRequest(BaseModel):
 
 @router.post(
     "/generate",
-    response_model=QuizResponse,
+    response_model=Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse],
     responses={
         400: {"model": ErrorResponse, "description": "잘못된 요청"},
         500: {"model": ErrorResponse, "description": "서버 오류"}
     },
     summary="경제 퀴즈 생성 (범용)",
-    description="10세 이하 어린이를 위한 경제 교육 OX 퀴즈를 생성합니다. 난이도를 직접 지정할 수 있습니다."
+    description="10세 이하 어린이를 위한 경제 교육 퀴즈를 생성합니다. 난이도를 직접 지정할 수 있습니다."
 )
 async def generate_quiz(
     request: QuizRequest,
     quiz_service: QuizGeneratorService = Depends(get_quiz_service)
-) -> QuizResponse:
+) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
     """경제 퀴즈 생성 API (범용)"""
     try:
         logger.info(f"퀴즈 생성 요청 - 난이도: {request.difficulty}, 개수: {request.quiz_count}, 주제: {request.topic}")
@@ -60,18 +68,18 @@ async def generate_quiz(
 
 @router.post(
     "/easy",
-    response_model=QuizResponse,
+    response_model=EasyQuizResponse,
     responses={
         400: {"model": ErrorResponse, "description": "잘못된 요청"},
         500: {"model": ErrorResponse, "description": "서버 오류"}
     },
-    summary="쉬운 난이도 퀴즈 생성",
+    summary="쉬운 난이도 퀴즈 생성 (OX 퀴즈)",
     description="5-7세 어린이를 위한 쉬운 난이도의 경제 교육 OX 퀴즈를 생성합니다."
 )
 async def generate_easy_quiz(
     request: SimplifiedQuizRequest = SimplifiedQuizRequest(),
     quiz_service: QuizGeneratorService = Depends(get_quiz_service)
-) -> QuizResponse:
+) -> EasyQuizResponse:
     """쉬운 난이도 퀴즈 생성 API"""
     try:
         logger.info(f"쉬운 난이도 퀴즈 생성 요청 - 주제: {request.topic}")
@@ -95,18 +103,18 @@ async def generate_easy_quiz(
 
 @router.post(
     "/medium",
-    response_model=QuizResponse,
+    response_model=MediumQuizResponse,
     responses={
         400: {"model": ErrorResponse, "description": "잘못된 요청"},
         500: {"model": ErrorResponse, "description": "서버 오류"}
     },
-    summary="보통 난이도 퀴즈 생성",
-    description="8-9세 어린이를 위한 보통 난이도의 경제 교육 OX 퀴즈를 생성합니다."
+    summary="보통 난이도 퀴즈 생성 (3지선다)",
+    description="8-9세 어린이를 위한 보통 난이도의 경제 교육 3지선다 퀴즈를 생성합니다."
 )
 async def generate_medium_quiz(
     request: SimplifiedQuizRequest = SimplifiedQuizRequest(),
     quiz_service: QuizGeneratorService = Depends(get_quiz_service)
-) -> QuizResponse:
+) -> MediumQuizResponse:
     """보통 난이도 퀴즈 생성 API"""
     try:
         logger.info(f"보통 난이도 퀴즈 생성 요청 - 주제: {request.topic}")
@@ -130,18 +138,18 @@ async def generate_medium_quiz(
 
 @router.post(
     "/hard",
-    response_model=QuizResponse,
+    response_model=HardQuizResponse,
     responses={
         400: {"model": ErrorResponse, "description": "잘못된 요청"},
         500: {"model": ErrorResponse, "description": "서버 오류"}
     },
-    summary="어려운 난이도 퀴즈 생성",
-    description="10세 어린이를 위한 어려운 난이도의 경제 교육 OX 퀴즈를 생성합니다."
+    summary="어려운 난이도 퀴즈 생성 (4지선다)",
+    description="10세 어린이를 위한 어려운 난이도의 경제 교육 4지선다 퀴즈를 생성합니다."
 )
 async def generate_hard_quiz(
     request: SimplifiedQuizRequest = SimplifiedQuizRequest(),
     quiz_service: QuizGeneratorService = Depends(get_quiz_service)
-) -> QuizResponse:
+) -> HardQuizResponse:
     """어려운 난이도 퀴즈 생성 API"""
     try:
         logger.info(f"어려운 난이도 퀴즈 생성 요청 - 주제: {request.topic}")
@@ -176,18 +184,21 @@ async def get_difficulty_levels():
                 "level": 0, 
                 "name": "하", 
                 "description": "5-7세 어린이 수준",
+                "format": "OX 퀴즈",
                 "endpoint": "/quiz/easy"
             },
             {
                 "level": 1, 
                 "name": "중", 
                 "description": "8-9세 어린이 수준",
+                "format": "3지선다",
                 "endpoint": "/quiz/medium"
             },
             {
                 "level": 2, 
                 "name": "상", 
                 "description": "10세 어린이 수준",
+                "format": "4지선다",
                 "endpoint": "/quiz/hard"
             }
         ]
