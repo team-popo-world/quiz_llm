@@ -29,7 +29,13 @@ def main():
         host=settings.host,
         port=settings.port,
         reload=True,
-        log_level="info"
+        log_level="info",
+        # 비동기 성능 최적화 설정
+        workers=1,  # 개발 모드에서는 1개
+        loop="asyncio",
+        access_log=True,
+        timeout_keep_alive=30,
+        timeout_graceful_shutdown=30
     )
 
 
