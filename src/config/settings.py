@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     max_tokens: Optional[int] = None
     temperature: float = 0.7
     
+    # 비동기 처리 설정
+    max_concurrent_requests: int = 5  # 최대 동시 요청 수
+    default_timeout: float = 30.0  # 기본 타임아웃 (초)
+    llm_timeout: float = 25.0  # LLM 응답 타임아웃 (초)
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

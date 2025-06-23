@@ -9,7 +9,6 @@ from src.models import (
     DifficultyLevel
 )
 from src.services import QuizGeneratorService
-from src.config import settings
 from pydantic import BaseModel, Field
 from typing import Optional, Union
 import logging
@@ -201,68 +200,6 @@ async def generate_hard_quiz(
         raise HTTPException(status_code=500, detail="어려운 퀴즈 생성 중 오류가 발생했습니다.")
 
 
-@router.post(
-    "/{difficulty}/{topic}",
-    response_model=Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse],
-    responses={
-        400: {"model": ErrorResponse, "description": "잘못된 요청"},
-        408: {"model": ErrorResponse, "description": "요청 타임아웃"},
-        500: {"model": ErrorResponse, "description": "서버 오류"}
-    },
-    summary="난이도와 주제별 퀴즈 생성",
-    description="URL 경로로 난이도와 주제를 지정하여 경제 퀴즈를 생성합니다."
-)
-async def generate_quiz_by_path(
-    difficulty: str = Path(..., description="퀴즈 난이도 (easy/medium/hard)"),
-    topic: str = Path(..., description="퀴즈 주제 (예: 용돈, 저축, 소비 등)"),
-    timeout: float = Query(default=30.0, ge=5.0, le=120.0, description="타임아웃 시간 (초)"),
-    quiz_service: QuizGeneratorService = Depends(get_quiz_service)
-) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
-    """URL 경로로 난이도와 주제를 지정한 퀴즈 생성"""
-    try:
-        # 난이도 매핑
-        difficulty_map = {
-            "easy": DifficultyLevel.EASY,
-            "medium": DifficultyLevel.MEDIUM,
-            "hard": DifficultyLevel.HARD
-        }
-        
-        if difficulty.lower() not in difficulty_map:
-            raise HTTPException(
-                status_code=400,
-                detail=f"지원하지 않는 난이도입니다. 사용 가능한 난이도: {list(difficulty_map.keys())}"
-            )
-        
-        # URL 디코딩 (한글 주제 처리)
-        from urllib.parse import unquote
-        decoded_topic = unquote(topic)
-        
-        logger.info(f"경로 기반 퀴즈 생성 요청 - 난이도: {difficulty}, 주제: {decoded_topic}, 타임아웃: {timeout}초")
-        
-        # QuizRequest 객체 생성
-        quiz_request = QuizRequest(
-            difficulty=difficulty_map[difficulty.lower()],
-            quiz_count=3,
-            topic=decoded_topic
-        )
-        
-        # 퀴즈 생성
-        quiz_response = await quiz_service.generate_quiz(quiz_request, timeout=timeout)
-        return quiz_response
-        
-    except asyncio.TimeoutError:
-        logger.error(f"퀴즈 생성 타임아웃: {timeout}초")
-        raise HTTPException(status_code=408, detail=f"퀴즈 생성에 너무 많은 시간이 걸렸습니다 ({timeout}초 초과)")
-    except HTTPException:
-        raise
-    except ValueError as e:
-        logger.error(f"퀴즈 생성 중 값 오류: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"퀴즈 생성 중 서버 오류: {str(e)}")
-        raise HTTPException(status_code=500, detail="퀴즈 생성 중 오류가 발생했습니다.")
-
-
 @router.get(
     "/difficulty-levels",
     response_model=dict,
@@ -325,10 +262,7 @@ async def health_check():
         return {
             "status": "healthy",
             "service": "quiz-generator",
-            "message": "Quiz LLM 서비스가 정상적으로 작동중입니다.",
-            "async_mode": True,
-            "max_concurrent_requests": settings.max_concurrent_requests,
-            "default_timeout": settings.default_timeout
+            "message": "Quiz LLM 서비스가 정상적으로 작동중입니다."
         }
     except Exception as e:
         logger.error(f"헬스체크 실패: {str(e)}")
@@ -338,22 +272,63 @@ async def health_check():
         )
 
 
-@router.get(
-    "/performance",
-    summary="비동기 성능 정보",
-    description="현재 비동기 처리 성능 및 설정 정보를 반환합니다."
+@router.post(
+    "/{difficulty}/{topic}",
+    response_model=Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse],
+    responses={
+        400: {"model": ErrorResponse, "description": "잘못된 요청"},
+        408: {"model": ErrorResponse, "description": "요청 타임아웃"},
+        500: {"model": ErrorResponse, "description": "서버 오류"}
+    },
+    summary="난이도와 주제별 퀴즈 생성 (비동기)",
+    description="URL 경로로 난이도와 주제를 지정하여 경제 퀴즈를 생성합니다."
 )
-async def get_performance_info():
-    """비동기 성능 정보 반환"""
-    return {
-        "async_settings": {
-            "max_concurrent_requests": settings.max_concurrent_requests,
-            "default_timeout": settings.default_timeout,
-            "llm_timeout": settings.llm_timeout
-        },
-        "performance_tips": [
-            "타임아웃 값을 조정하여 응답 속도를 최적화할 수 있습니다",
-            "동시 요청 수가 제한되어 서버 안정성을 보장합니다",
-            "비동기 처리로 여러 요청을 효율적으로 처리합니다"
-        ]
-    }
+async def generate_quiz_by_path(
+    difficulty: str = Path(..., description="퀴즈 난이도 (easy/medium/hard)"),
+    topic: str = Path(..., description="퀴즈 주제 (예: 용돈, 저축, 소비 등)"),
+    timeout: float = Query(default=30.0, ge=5.0, le=120.0, description="타임아웃 시간 (초)"),
+    quiz_service: QuizGeneratorService = Depends(get_quiz_service)
+) -> Union[EasyQuizResponse, MediumQuizResponse, HardQuizResponse]:
+    """URL 경로로 난이도와 주제를 지정한 퀴즈 생성 (비동기)"""
+    try:
+        # 난이도 매핑
+        difficulty_map = {
+            "easy": DifficultyLevel.EASY,
+            "medium": DifficultyLevel.MEDIUM,
+            "hard": DifficultyLevel.HARD
+        }
+        
+        if difficulty.lower() not in difficulty_map:
+            raise HTTPException(
+                status_code=400,
+                detail=f"지원하지 않는 난이도입니다. 사용 가능한 난이도: {list(difficulty_map.keys())}"
+            )
+        
+        # URL 디코딩 (한글 주제 처리)
+        from urllib.parse import unquote
+        decoded_topic = unquote(topic)
+        
+        logger.info(f"경로 기반 퀴즈 생성 요청 - 난이도: {difficulty}, 주제: {decoded_topic}, 타임아웃: {timeout}초")
+        
+        # QuizRequest 객체 생성
+        quiz_request = QuizRequest(
+            difficulty=difficulty_map[difficulty.lower()],
+            quiz_count=3,
+            topic=decoded_topic
+        )
+        
+        # 퀴즈 생성
+        quiz_response = await quiz_service.generate_quiz(quiz_request, timeout=timeout)
+        return quiz_response
+        
+    except asyncio.TimeoutError:
+        logger.error(f"퀴즈 생성 타임아웃: {timeout}초")
+        raise HTTPException(status_code=408, detail=f"퀴즈 생성에 너무 많은 시간이 걸렸습니다 ({timeout}초 초과)")
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.error(f"퀴즈 생성 중 값 오류: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"퀴즈 생성 중 서버 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail="퀴즈 생성 중 오류가 발생했습니다.")
