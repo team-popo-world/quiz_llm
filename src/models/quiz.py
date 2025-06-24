@@ -33,10 +33,13 @@ class EasyQuizResponse(BaseModel):
     difficulty: int = Field(description="퀴즈 난이도")
     Q1: str = Field(description="첫 번째 퀴즈 문제")
     A1: Literal["O", "X"] = Field(description="첫 번째 퀴즈 정답")
+    D1: str = Field(description="첫 번째 퀴즈 해설")
     Q2: str = Field(description="두 번째 퀴즈 문제")
     A2: Literal["O", "X"] = Field(description="두 번째 퀴즈 정답")
+    D2: str = Field(description="두 번째 퀴즈 해설")
     Q3: str = Field(description="세 번째 퀴즈 문제")
     A3: Literal["O", "X"] = Field(description="세 번째 퀴즈 정답")
+    D3: str = Field(description="세 번째 퀴즈 해설")
 
 
 class MediumQuizResponse(BaseModel):
@@ -45,12 +48,15 @@ class MediumQuizResponse(BaseModel):
     Q1: str = Field(description="첫 번째 퀴즈 문제")
     Q1_choices: list[str] = Field(description="첫 번째 퀴즈 선택지 (3개)")
     A1: Literal[1, 2, 3] = Field(description="첫 번째 퀴즈 정답 (1, 2, 3)")
+    D1: str = Field(description="첫 번째 퀴즈 해설")
     Q2: str = Field(description="두 번째 퀴즈 문제")
     Q2_choices: list[str] = Field(description="두 번째 퀴즈 선택지 (3개)")
     A2: Literal[1, 2, 3] = Field(description="두 번째 퀴즈 정답 (1, 2, 3)")
+    D2: str = Field(description="두 번째 퀴즈 해설")
     Q3: str = Field(description="세 번째 퀴즈 문제")
     Q3_choices: list[str] = Field(description="세 번째 퀴즈 선택지 (3개)")
     A3: Literal[1, 2, 3] = Field(description="세 번째 퀴즈 정답 (1, 2, 3)")
+    D3: str = Field(description="세 번째 퀴즈 해설")
 
 
 class HardQuizResponse(BaseModel):
@@ -59,12 +65,15 @@ class HardQuizResponse(BaseModel):
     Q1: str = Field(description="첫 번째 퀴즈 문제")
     Q1_choices: list[str] = Field(description="첫 번째 퀴즈 선택지 (4개)")
     A1: Literal[1, 2, 3, 4] = Field(description="첫 번째 퀴즈 정답 (1, 2, 3, 4)")
+    D1: str = Field(description="첫 번째 퀴즈 해설")
     Q2: str = Field(description="두 번째 퀴즈 문제")
     Q2_choices: list[str] = Field(description="두 번째 퀴즈 선택지 (4개)")
     A2: Literal[1, 2, 3, 4] = Field(description="두 번째 퀴즈 정답 (1, 2, 3, 4)")
+    D2: str = Field(description="두 번째 퀴즈 해설")
     Q3: str = Field(description="세 번째 퀴즈 문제")
     Q3_choices: list[str] = Field(description="세 번째 퀴즈 선택지 (4개)")
     A3: Literal[1, 2, 3, 4] = Field(description="세 번째 퀴즈 정답 (1, 2, 3, 4)")
+    D3: str = Field(description="세 번째 퀴즈 해설")
 
 
 # 이전 버전과의 호환성을 위한 별칭
