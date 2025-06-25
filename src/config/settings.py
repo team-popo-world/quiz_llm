@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     default_quiz_count: int = 3
     
     # Model Configuration
-    model_name: str = "gemini-2.5-flash-preview-05-20"
+    model_name: str = "gemini-2.5-flash"
     max_tokens: Optional[int] = None
     temperature: float = 0.7
     

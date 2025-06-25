@@ -4,7 +4,7 @@
 
 ## 기능
 
-- **LLM 기반 퀴즈 생성**: Gemini 2.5 Flash Preview 모델을 사용하여 고품질 경제 퀴즈 생성
+- **LLM 기반 퀴즈 생성**: Gemini 2.5 Flash 모델을 사용하여 고품질 경제 퀴즈 생성
 - **난이도별 퀴즈 형태**: 
   - **하(0)**: OX 퀴즈 (5-7세)
   - **중(1)**: 3지선다 (8-9세) 
@@ -221,7 +221,7 @@ quiz_llm/
 
 - **언어**: Python 3.10+
 - **프레임워크**: FastAPI
-- **LLM**: Google Gemini 2.5 Flash Preview
+- **LLM**: Google Gemini 2.5 Flash
 - **패키지 관리**: uv
 - **의존성**: langchain, langchain-google-genai, pydantic
 
