@@ -48,11 +48,11 @@ RUN useradd -m -u 1000 appuser && \
 USER appuser
 
 # 포트 노출
-EXPOSE 8001
+EXPOSE 8003
 
 # 헬스체크 설정
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/ || exit 1
+    CMD curl -f http://localhost:8003/ || exit 1
 
 # 애플리케이션 실행
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
