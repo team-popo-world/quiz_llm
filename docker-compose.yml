@@ -3,7 +3,7 @@ services:
     build: .
     container_name: quiz-llm-api
     ports:
-      - "8001:8001"
+      - "8003:8003"
     environment:
       # 환경 변수들 (.env 파일에서 로드)
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -15,7 +15,7 @@ services:
       - ./src:/app/src:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/docs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8003/docs"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -26,7 +26,7 @@ services:
     build: .
     container_name: quiz-llm-dev
     ports:
-      - "8002:8001"
+      - "8004:8003"
     environment:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - LOG_LEVEL=DEBUG
@@ -34,6 +34,6 @@ services:
       - .env
     volumes:
       - .:/app
-    command: ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    command: ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload"]
     profiles:
       - dev

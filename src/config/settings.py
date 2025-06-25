@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     host: str = "0.0.0.0"
-    port: int = 8001
+    port: int = 8003
     
     # Quiz Configuration
     default_difficulty: int = 0
